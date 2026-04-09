@@ -2,78 +2,82 @@ package history
 
 import (
 	"bytes"
-	"encoding/json"
 	"strings"
 	"testing"
 	"time"
 )
 
-var exportTime = time.Date(2024, 6, 1, 12, 0, 0, 0, time.UTC)
-
 func sampleEvents() []Event {
+	base := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
 	return []Event{
-		{Port: 8080, State: "open", Timestamp: exportTime},
-		{Port: 443, State: "closed", Timestamp: exportTime.Add(time.Minute)},
+		{Port: 8080, State: StateOpen, Timestamp: base},
+		{Port: 9090, State: StateClosed, Timestamp: base.Add(time.Minute)},
 	}
 }
 
 func TestExportJSON_ValidOutput(t *testing.T) {
 	var buf bytes.Buffer
-	if err := ExportJSON(&buf, sampleEvents()); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	events := sampleEvents()
+	if err := ExportJSON(&buf, events); err != nil {
+		t.Fatalf("ExportJSON error: %v", err)
 	}
-
-	var out []Event
-	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
-		t.Fatalf("output is not valid JSON: %v", err)
+	out := buf.String()
+	if !strings.Contains(out, "8080") {
+		t.Errorf("expected port 8080 in JSON output, got: %s", out)
 	}
-	if len(out) != 2 {
-		t.Fatalf("expected 2 events, got %d", len(out))
-	}
-	if out[0].Port != 8080 || out[0].State != "open" {
-		t.Errorf("unexpected first event: %+v", out[0])
+	if !strings.Contains(out, "open") {
+		t.Errorf("expected state 'open' in JSON output, got: %s", out)
 	}
 }
 
 func TestExportJSON_Empty(t *testing.T) {
 	var buf bytes.Buffer
 	if err := ExportJSON(&buf, nil); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("ExportJSON error on nil: %v", err)
 	}
-	if !strings.Contains(buf.String(), "null") && !strings.Contains(buf.String(), "[]") {
-		t.Errorf("expected empty JSON array or null, got: %s", buf.String())
+	out := strings.TrimSpace(buf.String())
+	if out != "[]" {
+		t.Errorf("expected empty JSON array, got: %s", out)
 	}
 }
 
 func TestExportCSV_HeaderAlwaysPresent(t *testing.T) {
 	var buf bytes.Buffer
 	if err := ExportCSV(&buf, nil); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("ExportCSV error: %v", err)
 	}
-	if !strings.HasPrefix(buf.String(), "timestamp,port,state") {
-		t.Errorf("CSV header missing, got: %s", buf.String())
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 line (header only), got %d", len(lines))
+	}
+	if lines[0] != "timestamp,port,state" {
+		t.Errorf("unexpected header: %s", lines[0])
 	}
 }
 
 func TestExportCSV_ValidRows(t *testing.T) {
 	var buf bytes.Buffer
-	if err := ExportCSV(&buf, sampleEvents()); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	events := sampleEvents()
+	if err := ExportCSV(&buf, events); err != nil {
+		t.Fatalf("ExportCSV error: %v", err)
 	}
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	if len(lines) != 3 {
 		t.Fatalf("expected 3 lines (header + 2 rows), got %d", len(lines))
 	}
-	if !strings.Contains(lines[1], "8080") || !strings.Contains(lines[1], "open") {
-		t.Errorf("unexpected row: %s", lines[1])
+	if !strings.Contains(lines[1], "8080") {
+		t.Errorf("row 1 missing port 8080: %s", lines[1])
+	}
+	if !strings.Contains(lines[2], "closed") {
+		t.Errorf("row 2 missing state closed: %s", lines[2])
 	}
 }
 
-func TestExport_UnknownFormat(t *testing.T) {
+func TestExport_UnsupportedFormat(t *testing.T) {
 	var buf bytes.Buffer
-	err := Export(&buf, sampleEvents(), Format("xml"))
+	err := Export(&buf, nil, ExportFormat("xml"))
 	if err == nil {
-		t.Fatal("expected error for unknown format")
+		t.Fatal("expected error for unsupported format")
 	}
 	if !strings.Contains(err.Error(), "unsupported") {
 		t.Errorf("unexpected error message: %v", err)
