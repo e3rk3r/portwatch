@@ -1,0 +1,40 @@
+# portwatch.example.yaml — example configuration file
+# Copy to portwatch.yaml and adjust to your needs.
+
+# How often portwatch polls each port (Go duration string).
+interval: 10s
+
+ports:
+  # Monitor a local web server on port 8080.
+  - host: localhost
+    port: 8080
+    on_open:
+      - type: webhook
+        url: https://hooks.example.com/notify?event=port_open&port=8080
+      - type: script
+        command: echo "port 8080 is now OPEN" >> /var/log/portwatch.log
+    on_close:
+      - type: webhook
+        url: https://hooks.example.com/notify?event=port_close&port=8080
+      - type: script
+        command: echo "port 8080 is now CLOSED" >> /var/log/portwatch.log
+
+  # Monitor a remote database on a different host.
+  - host: db.internal
+    port: 5432
+    on_open:
+      - type: script
+        command: /opt/scripts/db-up.sh
+    on_close:
+      - type: script
+        command: /opt/scripts/db-down.sh
+
+  # Monitor Redis with only a webhook on state change.
+  - host: localhost
+    port: 6379
+    on_open:
+      - type: webhook
+        url: https://hooks.example.com/notify?event=redis_up
+    on_close:
+      - type: webhook
+        url: https://hooks.example.com/notify?event=redis_down
