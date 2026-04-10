@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// ExportFormat represents the supported export formats.
+// ExportFormat enumerates supported export formats.
 type ExportFormat string
 
 const (
@@ -16,30 +16,39 @@ const (
 	FormatCSV  ExportFormat = "csv"
 )
 
-// ExportJSON writes all events from the ring as a JSON array to w.
+// ExportJSON writes events as a JSON array to w.
 func ExportJSON(w io.Writer, events []Event) error {
+	type row struct {
+		Port      int    `json:"port"`
+		State     string `json:"state"`
+		Timestamp string `json:"timestamp"`
+	}
+	rows := make([]row, len(events))
+	for i, e := range events {
+		rows[i] = row{
+			Port:      e.Port,
+			State:     e.State.String(),
+			Timestamp: e.Timestamp.UTC().Format(time.RFC3339),
+		}
+	}
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	if events == nil {
-		events = []Event{}
-	}
-	return enc.Encode(events)
+	return enc.Encode(rows)
 }
 
-// ExportCSV writes all events from the ring as CSV rows to w.
-// The header row is always written even when events is empty.
+// ExportCSV writes events as CSV (with header) to w.
 func ExportCSV(w io.Writer, events []Event) error {
 	cw := csv.NewWriter(w)
-	if err := cw.Write([]string{"timestamp", "port", "state"}); err != nil {
+	if err := cw.Write([]string{"port", "state", "timestamp"}); err != nil {
 		return err
 	}
 	for _, e := range events {
-		row := []string{
-			e.Timestamp.UTC().Format(time.RFC3339),
+		rec := []string{
 			fmt.Sprintf("%d", e.Port),
 			e.State.String(),
+			e.Timestamp.UTC().Format(time.RFC3339),
 		}
-		if err := cw.Write(row); err != nil {
+		if err := cw.Write(rec); err != nil {
 			return err
 		}
 	}
