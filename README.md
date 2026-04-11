@@ -53,6 +53,20 @@ When a port transitions from open to closed (or vice versa), portwatch executes 
 | `--webhook` | — | Webhook URL to call on state change |
 | `--config` | — | Path to YAML config file |
 | `--verbose` | `false` | Enable verbose logging |
+| `--timeout` | `5s` | Dial timeout per port check |
+
+---
+
+## Environment Variables
+
+All flags can also be set via environment variables using the `PORTWATCH_` prefix:
+
+| Variable | Equivalent Flag |
+|----------|-----------------|
+| `PORTWATCH_CONFIG` | `--config` |
+| `PORTWATCH_INTERVAL` | `--interval` |
+| `PORTWATCH_WEBHOOK` | `--webhook` |
+| `PORTWATCH_VERBOSE` | `--verbose` |
 
 ---
 
