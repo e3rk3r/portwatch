@@ -38,6 +38,21 @@ func startServer(t *testing.T) (string, context.CancelFunc) {
 	return addr, cancel
 }
 
+// getJSON is a helper that performs a GET request and decodes the JSON response
+// body into dst. It fails the test if the request fails or decoding fails.
+func getJSON(t *testing.T, url string, dst any) *http.Response {
+	t.Helper()
+	resp, err := http.Get(url)
+	if err != nil {
+		t.Fatalf("GET %s: %v", url, err)
+	}
+	if err := json.NewDecoder(resp.Body).Decode(dst); err != nil {
+		resp.Body.Close()
+		t.Fatalf("decode response from %s: %v", url, err)
+	}
+	return resp
+}
+
 func TestHealthz(t *testing.T) {
 	addr, cancel := startServer(t)
 	defer cancel()
@@ -84,13 +99,7 @@ func TestHistory_ReturnsJSON(t *testing.T) {
 	addr, cancel := startServer(t)
 	defer cancel()
 
-	resp, err := http.Get(fmt.Sprintf("http://%s/history", addr))
-	if err != nil {
-		t.Fatalf("GET /history: %v", err)
-	}
-	defer resp.Body.Close()
 	var out []any
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	resp := getJSON(t, fmt.Sprintf("http://%s/history", addr), &out)
+	defer resp.Body.Close()
 }
