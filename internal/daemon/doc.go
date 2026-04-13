@@ -9,9 +9,15 @@
 //  3. When a change is detected, the action.Executor fires any configured
 //     webhooks or scripts for that port and new state.
 //
+// Graceful shutdown is supported via context cancellation. When the provided
+// context is cancelled, the daemon finishes any in-progress poll cycle and
+// returns without leaking goroutines.
+//
 // Usage:
 //
 //	cfg, _ := config.Load("portwatch.yaml")
 //	d := daemon.New(cfg)
-//	d.Run(ctx)
+//	if err := d.Run(ctx); err != nil {
+//		log.Fatalf("daemon exited with error: %v", err)
+//	}
 package daemon
