@@ -54,6 +54,7 @@ When a port transitions from open to closed (or vice versa), portwatch executes 
 | `--config` | — | Path to YAML config file |
 | `--verbose` | `false` | Enable verbose logging |
 | `--timeout` | `5s` | Dial timeout per port check |
+| `--host` | `localhost` | Host to monitor when using `--port` |
 
 ---
 
@@ -67,6 +68,7 @@ All flags can also be set via environment variables using the `PORTWATCH_` prefi
 | `PORTWATCH_INTERVAL` | `--interval` |
 | `PORTWATCH_WEBHOOK` | `--webhook` |
 | `PORTWATCH_VERBOSE` | `--verbose` |
+| `PORTWATCH_HOST` | `--host` |
 
 ---
 
