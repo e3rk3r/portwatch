@@ -93,3 +93,23 @@ func (w *WindowCounter) Count(key string) int {
 	}
 	return count
 }
+
+// Keys returns all keys that currently have at least one event within the window.
+func (w *WindowCounter) Keys() []string {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	now := w.clock()
+	cutoff := now.Add(-w.policy.Size)
+
+	keys := make([]string, 0, len(w.timestamps))
+	for key, ts := range w.timestamps {
+		for _, t := range ts {
+			if t.After(cutoff) {
+				keys = append(keys, key)
+				break
+			}
+		}
+	}
+	return keys
+}
