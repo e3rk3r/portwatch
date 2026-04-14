@@ -56,6 +56,22 @@ func TestEscalator_ResetClearsState(t *testing.T) {
 	}
 }
 
+func TestEscalator_ResetAllowsReescalation(t *testing.T) {
+	base := time.Now()
+	e := NewEscalator(EscalationPolicy{Threshold: 2, MinDuration: 5 * time.Minute})
+	e.clock = fixedEscalationClock(base.Add(6 * time.Minute))
+	e.Record("k")
+	if !e.Record("k") {
+		t.Fatal("expected escalation before reset")
+	}
+	e.Reset("k")
+	e.Record("k")
+	// After reset, count restarts — second record should escalate again once threshold met
+	if !e.Record("k") {
+		t.Fatal("expected re-escalation after reset when threshold and duration met")
+	}
+}
+
 func TestEscalator_IndependentKeys(t *testing.T) {
 	e := NewEscalator(EscalationPolicy{Threshold: 2, MinDuration: 0})
 	e.Record("a")
