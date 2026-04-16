@@ -97,4 +97,20 @@ func TestReplayer_ExpiredEntriesDropped(t *testing.T) {
 	if atomic.LoadInt32(&calls) != 0 {
 		t.Fatalf("expired entry should not be replayed")
 	}
+	if r.Len() != 0 {
+		t.Fatalf("expired entry should be dropped from buffer, got len=%d", r.Len())
+	}
+}
+
+func TestReplayer_ReplayEmptyBuffer(t *testing.T) {
+	r := NewReplayer(DefaultReplayPolicy())
+
+	dst := dispatcherFunc(func(_ context.Context, _ Notification) error {
+		t.Fatal("dispatcher should not be called for empty buffer")
+		return nil
+	})
+
+	if err := r.Replay(context.Background(), dst); err != nil {
+		t.Fatalf("unexpected error on empty replay: %v", err)
+	}
 }
