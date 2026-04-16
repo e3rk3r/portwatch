@@ -23,4 +23,12 @@
 // If any stage returns an error the chain is aborted immediately and
 // subsequent stages are skipped. Stages are executed synchronously in
 // the order they were passed to NewPipeline.
+//
+// Stage ordering:
+//
+//	The stages passed to NewPipeline should be ordered from outermost to
+//	innermost — i.e. the first stage is called first and is responsible for
+//	passing control to the next stage via its internal next reference.
+//	Passing stages in the wrong order will not cause an error, but may
+//	result in deduplication or suppression logic being bypassed.
 package alert
